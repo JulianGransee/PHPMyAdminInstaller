@@ -22,8 +22,8 @@ read -ep $'\e[37mPassword for \e[0m\e[36m'$dynuser$'\e[0m\e[37m (\"\e[33mauto\e[
 done
 
 generatePassword="false";
-
-if [[ "${dynamicUserPassword}" == "auto" ]]; then
+dynamicUserPassword=`echo $dynamicUserPassword | sed 's/ *$//g'`
+if [[ "${dynamicUserPassword,,%%*( )}" == "auto" ]]; then
 
 	generatePassword="true";
 
@@ -208,7 +208,7 @@ Alias /phpmyadmin /usr/share/phpmyadmin
 
 a2enconf phpmyadmin.conf
 
-service apache2 reload 
+service apache2 reload
 
 ipaddress=$( ip route get 1.1.1.1 | awk -F"src " 'NR==1{split($2,a," ");print a[1]}' )
 
