@@ -32,7 +32,7 @@ fi
 status "updating"
 apt -qq -o=Dpkg::Use-Pty=0 update -y
 
-status "install necessary packages"
+status "installing necessary packages"
 apt -qq -o=Dpkg::Use-Pty=0 install php php-cli php-fpm php-json php-common php-mysql php-zip php-gd php-mbstring php-curl php-xml php-pear php-bcmath php-mbstring php-zip php-gd apache2 libapache2-mod-php mariadb-server pwgen expect iproute2 -y
 
 status "generating passwords"
@@ -80,7 +80,7 @@ sudo mv phpMyAdmin-5.1.0-all-languages/ /usr/share/phpmyadmin
 
 sudo mkdir -p /var/lib/phpmyadmin/tmp
 
-status "edit config"
+status "editing config"
 sudo cp /usr/share/phpmyadmin/config.sample.inc.php /usr/share/phpmyadmin/config.inc.php
 
 
@@ -132,7 +132,7 @@ sed -i 's/\/\/ \$cfg\[\x27Servers\x27\]\[\$i\]\[\x27export_templates\x27\] \= \x
 
 echo "\$cfg['TempDir'] = '/var/lib/phpmyadmin/tmp';" >> /usr/share/phpmyadmin/config.inc.php
 
-status "Rights are granted"
+status "rights are granted"
 sudo chown -R www-data:www-data /var/lib/phpmyadmin
 
 status "importing PHPMyAdmin's \"creating_tables.sql\""
