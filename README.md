@@ -12,13 +12,10 @@ bash <(curl -s https://raw.githubusercontent.com/GermanJag/PHPMyAdminInstaller/m
 
 | Operating System | Version | Can run the script?
 | ---------------- | ------- | ------------------
-| Ubuntu           | 18.04   | probably, not tested yet 	        
+| Ubuntu           | 18.04   | :white_check_mark: 	        
 |                  | 20.04   | :white_check_mark:
 | Debian           | 9       | probably, not tested yet		        
-|                  | 10      | :white_check_mark:
-| CentOS           | 6       | probably, not tested yet 	       	 		  	
-|                  | 7       | probably, not tested yet 	        		  	
-|                  | 8       | probably, not tested yet 	         		  
+|                  | 10      | :white_check_mark:        		  
 
 
 ## before installing it - think about it
