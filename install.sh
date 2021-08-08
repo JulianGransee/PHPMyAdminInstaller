@@ -136,8 +136,10 @@ status "rights are granted"
 chown -R www-data:www-data /var/lib/phpmyadmin
 
 status "importing PHPMyAdmin's \"creating_tables.sql\""
+service mysql start
 mariadb < /usr/share/phpmyadmin/sql/create_tables.sql
 
+service mysql restart
 status "creating MySQL users and granting privileges"
 mariadb -e "GRANT SELECT, INSERT, UPDATE, DELETE ON phpmyadmin.* TO 'pma'@'localhost' IDENTIFIED BY '${pmaPassword}'"
 
