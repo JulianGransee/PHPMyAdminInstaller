@@ -208,7 +208,7 @@ Alias /phpmyadmin /usr/share/phpmyadmin
 
 a2enconf phpmyadmin.conf
 
-service reload apache2
+service apache2 reload 
 
 ipaddress=$( ip route get 1.1.1.1 | awk -F"src " 'NR==1{split($2,a," ");print a[1]}' )
 
