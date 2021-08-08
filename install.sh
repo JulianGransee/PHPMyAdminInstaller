@@ -1,10 +1,13 @@
 #!/bin/bash
-red="\e[0;91m"
-green="\e[0;92m"
-bold="\e[1m"
-reset="\e[0m"
-blue="\e[0;94m"
-uline="\e[4m"
+green='\033[0;32m'
+red='\033[0;31m'
+white='\033[0;37m'
+reset='\033[0;0m'
+status(){
+  clear
+  echo -e $green$1'...'$reset
+  sleep 1
+}
 
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root" 1>&2
@@ -26,11 +29,13 @@ if [[ "${dynamicUserPassword}" == "auto" ]]; then
 
 fi
 
+status "updating"
+apt -qq -o=Dpkg::Use-Pty=0 update -y
 
-sudo apt update -y
+status "install necessary packages"
+apt -qq -o=Dpkg::Use-Pty=0 install php php-cli php-fpm php-json php-common php-mysql php-zip php-gd php-mbstring php-curl php-xml php-pear php-bcmath php-mbstring php-zip php-gd apache2 libapache2-mod-php mariadb-server pwgen expect iproute2 -y
 
-sudo apt install php php-cli php-fpm php-json php-common php-mysql php-zip php-gd php-mbstring php-curl php-xml php-pear php-bcmath php-mbstring php-zip php-gd apache2 libapache2-mod-php mariadb-server pwgen expect -y
-
+status "generating passwords"
 rootPasswordMariaDB=$( pwgen 32 1 );
 pmaPassword=$( pwgen 32 1 );
 blowfish_secret=$( pwgen 32 1 );
@@ -38,11 +43,7 @@ if [[ "${generatePassword}" == "true" ]]; then
 	dynamicUserPassword=$( pwgen 32 1 );
 fi
 
-if [[ "${fivemuser}" == "YES" ]]; then
-	fivempasswd=$( pwgen 32 1 );
-fi
-
-
+status "securing the mariadb installation"
 SECURE_MYSQL=$(expect -c "
 set timeout 3
 spawn mysql_secure_installation
@@ -64,19 +65,22 @@ expect \"Reload privilege tables now?\"
 send \"y\r\"
 expect eof
 ")
-
 echo "${SECURE_MYSQL}"
 
+status "downloading of PHPMyAdmin"
 wget https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip
 
+status "unpacking PHPMyAdmin"
 unzip phpMyAdmin-5.1.0-all-languages.zip
 
 rm phpMyAdmin-5.1.0-all-languages.zip
 
+status "moving files"
 sudo mv phpMyAdmin-5.1.0-all-languages/ /usr/share/phpmyadmin
 
 sudo mkdir -p /var/lib/phpmyadmin/tmp
 
+status "edit config"
 sudo cp /usr/share/phpmyadmin/config.sample.inc.php /usr/share/phpmyadmin/config.inc.php
 
 
@@ -128,14 +132,18 @@ sed -i 's/\/\/ \$cfg\[\x27Servers\x27\]\[\$i\]\[\x27export_templates\x27\] \= \x
 
 echo "\$cfg['TempDir'] = '/var/lib/phpmyadmin/tmp';" >> /usr/share/phpmyadmin/config.inc.php
 
+status "Rights are granted"
 sudo chown -R www-data:www-data /var/lib/phpmyadmin
 
+status "importing PHPMyAdmin's \"creating_tables.sql\""
 sudo mariadb < /usr/share/phpmyadmin/sql/create_tables.sql
 
+status "creating MySQL users and granting privileges"
 sudo mariadb -e "GRANT SELECT, INSERT, UPDATE, DELETE ON phpmyadmin.* TO 'pma'@'localhost' IDENTIFIED BY '${pmaPassword}'"
 
 sudo mariadb -e "GRANT ALL PRIVILEGES ON *.* TO '${dynuser}'@'localhost' IDENTIFIED BY '${dynamicUserPassword}' WITH GRANT OPTION;"
 
+status "deploying apache2 config"
 echo '# phpMyAdmin default Apache configuration
 
 Alias /phpmyadmin /usr/share/phpmyadmin
@@ -205,14 +213,14 @@ ipaddress=$( ip route get 1.1.1.1 | awk -F"src " 'NR==1{split($2,a," ");print a[
 clear
 
 echo "
-MySQL-Daten:
+MySQL-Data:
    IP/Host: localhost
    Port: 3306
-   Benutzer: root
-   Passwort: ${rootPasswordMariaDB}
+   User: root
+   Password: ${rootPasswordMariaDB}
 
-phpMyAdmin-Daten:
+PHPMyAdmin-Data:
    Link: http://${ipaddress}/phpmyadmin/
-   Benutzer: ${dynuser}
-   Passwort: ${dynamicUserPassword}
+   User: ${dynuser}
+   Password: ${dynamicUserPassword}
 "
