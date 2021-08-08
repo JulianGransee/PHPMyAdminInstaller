@@ -33,7 +33,7 @@ status "updating"
 apt -qq -o=Dpkg::Use-Pty=0 update -y
 
 status "installing necessary packages"
-apt -qq -o=Dpkg::Use-Pty=0 install php php-cli php-fpm php-json php-common php-mysql php-zip php-gd php-mbstring php-curl php-xml php-pear php-bcmath php-mbstring php-zip php-gd apache2 libapache2-mod-php mariadb-server pwgen expect iproute2 -y
+apt -qq -o=Dpkg::Use-Pty=0 install php php-cli php-fpm php-json php-common php-mysql php-zip php-gd php-mbstring php-curl php-xml php-pear php-bcmath php-mbstring php-zip php-gd apache2 libapache2-mod-php mariadb-server pwgen expect iproute2 wget zip -y
 
 status "generating passwords"
 rootPasswordMariaDB=$( pwgen 32 1 );
@@ -71,17 +71,17 @@ status "downloading of PHPMyAdmin"
 wget https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip
 
 status "unpacking PHPMyAdmin"
-unzip phpMyAdmin-5.1.0-all-languages.zip
+unzip phpMyAdmin-latest-all-languages.zip
 
-rm phpMyAdmin-5.1.0-all-languages.zip
+rm phpMyAdmin-latest-all-languages.zip
 
 status "moving files"
-sudo mv phpMyAdmin-5.1.0-all-languages/ /usr/share/phpmyadmin
+mv phpMyAdmin-* /usr/share/phpmyadmin
 
-sudo mkdir -p /var/lib/phpmyadmin/tmp
+mkdir -p /var/lib/phpmyadmin/tmp
 
 status "editing config"
-sudo cp /usr/share/phpmyadmin/config.sample.inc.php /usr/share/phpmyadmin/config.inc.php
+cp /usr/share/phpmyadmin/config.sample.inc.php /usr/share/phpmyadmin/config.inc.php
 
 
 sed -i 's/\$cfg\[\x27blowfish_secret\x27\] = \x27\x27\; \/\* YOU MUST FILL IN THIS FOR COOKIE AUTH! \*\//\$cfg\[\x27blowfish_secret\x27\] = \x27'$blowfish_secret'\x27\; \/\* YOU MUST FILL IN THIS FOR COOKIE AUTH! \*\//' /usr/share/phpmyadmin/config.inc.php
@@ -133,15 +133,15 @@ sed -i 's/\/\/ \$cfg\[\x27Servers\x27\]\[\$i\]\[\x27export_templates\x27\] \= \x
 echo "\$cfg['TempDir'] = '/var/lib/phpmyadmin/tmp';" >> /usr/share/phpmyadmin/config.inc.php
 
 status "rights are granted"
-sudo chown -R www-data:www-data /var/lib/phpmyadmin
+chown -R www-data:www-data /var/lib/phpmyadmin
 
 status "importing PHPMyAdmin's \"creating_tables.sql\""
-sudo mariadb < /usr/share/phpmyadmin/sql/create_tables.sql
+mariadb < /usr/share/phpmyadmin/sql/create_tables.sql
 
 status "creating MySQL users and granting privileges"
-sudo mariadb -e "GRANT SELECT, INSERT, UPDATE, DELETE ON phpmyadmin.* TO 'pma'@'localhost' IDENTIFIED BY '${pmaPassword}'"
+mariadb -e "GRANT SELECT, INSERT, UPDATE, DELETE ON phpmyadmin.* TO 'pma'@'localhost' IDENTIFIED BY '${pmaPassword}'"
 
-sudo mariadb -e "GRANT ALL PRIVILEGES ON *.* TO '${dynuser}'@'localhost' IDENTIFIED BY '${dynamicUserPassword}' WITH GRANT OPTION;"
+mariadb -e "GRANT ALL PRIVILEGES ON *.* TO '${dynuser}'@'localhost' IDENTIFIED BY '${dynamicUserPassword}' WITH GRANT OPTION;"
 
 status "deploying apache2 config"
 echo '# phpMyAdmin default Apache configuration
@@ -204,9 +204,11 @@ Alias /phpmyadmin /usr/share/phpmyadmin
     Require all denied
 </Directory>' > /etc/apache2/conf-available/phpmyadmin.conf
 
-sudo a2enconf phpmyadmin.conf
+/etc/init.d/apache2 start
 
-sudo systemctl reload apache2
+a2enconf phpmyadmin.conf
+
+service reload apache2
 
 ipaddress=$( ip route get 1.1.1.1 | awk -F"src " 'NR==1{split($2,a," ");print a[1]}' )
 
