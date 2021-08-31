@@ -1,6 +1,6 @@
 # PHPMyAdmin install Script
 
-This is just a simple to install PHPMyAdmin, Apache2 and MariaDB on some Linux distributions based systems.
+This is just a simple to install PHPMyAdmin, Apache2 and MariaDB on Debian based systems.
 
 To run the installer simply run the following command and follow the instructions
 
@@ -10,11 +10,11 @@ bash <(curl -s https://raw.githubusercontent.com/GermanJag/PHPMyAdminInstaller/m
 
 ---
 
-| Operating System | Version | Can run the script?
+| Operating System | Version | Is tested and can run the script
 | ---------------- | ------- | ------------------
 | Ubuntu           | 18.04   | :white_check_mark: 	        
 |                  | 20.04   | :white_check_mark:
-| Debian           | 9       | probably, not tested yet		        
+| Debian           | 9       | :negative_squared_cross_mark:	        
 |                  | 10      | :white_check_mark:        		  
 
 
