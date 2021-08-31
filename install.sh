@@ -26,6 +26,9 @@ runCommand(){
 }
 
 function input() {
+
+  ipaddress=$( ip route get 1.1.1.1 | awk -F"src " 'NR==1{split($2,a," ");print a[1]}' )
+
   while [ -z $dynuser ]; do
   read -ep $'\e[37mPlease enter a name for the MySQL user you want to use later to log in to PHPMyAdmin:\e[0m ' dynuser;
   done
@@ -220,9 +223,43 @@ function mainPart() {
   runCommand "service apache2 reload"
 }
 
-function output() {
-  ipaddress=$( ip route get 1.1.1.1 | awk -F"src " 'NR==1{split($2,a," ");print a[1]}' )
 
+function selfTest() {
+
+  status "Running some very basic self tests"
+  status "Running apache2 self tests (using curl)"
+
+  APACHE_TEST_PASSED=true
+
+  HTTP_STATUS_CODE=$( curl -I -X GET http://${ipaddress}/phpmyadmin/ | head -n 1 )
+  FIRST_COOKIE=$( curl -I -X GET http://${ipaddress}/phpmyadmin/ | grep Set-Cookie | head -n 1 )
+
+  if [[ "${HTTP_STATUS_CODE,,}" != *"200"* ]]; then APACHE_TEST_PASSED=false; fi
+
+  if [[ "${FIRST_COOKIE,,}" != *"phpmyadmin"* ]]; then APACHE_TEST_PASSED=false; fi
+
+  if [[ "${APACHE_TEST_PASSED}" != "true" ]]; then
+    echo -e "${red}Apache2 did not respond as expected. Please check your Apache2 (and PHP) installation!"
+    exit 1
+  fi
+
+  status "Running MariaDB self tests"
+
+  MARIADB_TEST_PASSED=true
+
+  SHOW_DATABASES=$(mariadb -e "SHOW DATABASES;")
+
+  if [[ "${SHOW_DATABASES}" != *"phpmyadmin"* ]]; then MARIADB_TEST_PASSED=false; fi
+
+  if [[ "${MARIADB_TEST_PASSED}" != "true" ]]; then
+    echo -e "${red}MariaDB did not respond as expected. Please check your MariaDB installation!"
+    exit 1
+  fi
+
+}
+
+
+function output() {
   clear
 
   echo "
@@ -239,6 +276,8 @@ function output() {
   "
 }
 
+
+
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root" 1>&2
    exit 1
@@ -248,5 +287,7 @@ fi
 input
 
 mainPart
+
+selfTest
 
 output
