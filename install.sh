@@ -48,9 +48,11 @@ function input() {
 
 
 function mainPart() {
-  runCommand "apt -qq -o=Dpkg::Use-Pty=0 update -y" "updating"
+  runCommand "apt -y update" "updating"
 
-  runCommand "apt -qq -o=Dpkg::Use-Pty=0 install php php-cli php-fpm php-json php-common php-mysql php-zip php-gd php-mbstring php-curl php-xml php-pear php-bcmath php-mbstring php-zip php-gd apache2 libapache2-mod-php mariadb-server pwgen expect iproute2 wget zip -y" "installing necessary packages"
+  runCommand "apt -y upgrade" 
+
+  runCommand "apt install php php-cli php-fpm php-json php-common php-mysql php-zip php-gd php-mbstring php-curl php-xml php-pear php-bcmath php-mbstring php-zip php-gd apache2 libapache2-mod-php mariadb-server pwgen expect iproute2 wget zip -y" "installing necessary packages"
 
   status "generating passwords"
   rootPasswordMariaDB=$( pwgen 32 1 );
