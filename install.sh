@@ -1,3 +1,18 @@
+#    Copyright (C) 2021  Julian G.
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License 2 as published by
+#    the Free Software Foundation.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License 2 for more details.
+#
+#    You should have received a copy of the GNU General Public License 2 along
+#    with this program; if not, write to the Free Software Foundation, Inc.,
+#    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
 #!/bin/bash
 green='\033[0;32m'
 red='\033[0;31m'
@@ -27,6 +42,12 @@ runCommand(){
 
 function input() {
 
+  echo -e "${green}PHPMyAdmin install script 1.0, Copyright (C) 2021 Julian G. \n\
+Gnomovision comes with ABSOLUTELY NO WARRANTY; for details look up the repository https://github.com/GermanJag/PHPMyAdminInstaller.\n\
+This is free software, and you are welcome to redistribute it under certain conditions; Look up https://github.com/GermanJag/PHPMyAdminInstaller/blob/main/LICENSE for details."
+sleep 2
+clear
+
   ipaddress=$( ip route get 1.1.1.1 | awk -F"src " 'NR==1{split($2,a," ");print a[1]}' )
 
   while [ -z $dynuser ]; do
@@ -50,7 +71,7 @@ function input() {
 function mainPart() {
   runCommand "apt -y update" "updating"
 
-  runCommand "apt -y upgrade" 
+  runCommand "apt -y upgrade"
 
   runCommand "apt install php php-cli php-fpm php-json php-common php-mysql php-zip php-gd php-mbstring php-curl php-xml php-pear php-bcmath php-mbstring php-zip php-gd apache2 libapache2-mod-php mariadb-server pwgen expect iproute2 wget zip -y" "installing necessary packages"
 
