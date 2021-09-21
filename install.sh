@@ -167,7 +167,7 @@ function dbInstall(){
   send \"y\r\"
   expect eof
   ")
-  runCommand "${SECURE_MYSQL}" "securing the mariadb installation"
+  runCommand "echo ${SECURE_MYSQL}" "securing the mariadb installation"
 
 }
 
