@@ -246,7 +246,15 @@ function mainPart() {
 
   runCommand "apt -y upgrade"
 
-  runCommand "apt install php php-cli php-fpm php-json php-common php-mysql php-zip php-gd php-mbstring php-curl php-xml php-pear php-bcmath php-mbstring php-zip php-gd apache2 libapache2-mod-php mariadb-server pwgen expect iproute2 wget zip -y" "installing necessary packages"
+  runCommand "apt install apache2 libapache2-mod-php mariadb-server pwgen expect iproute2 wget zip apt-transport-https lsb-release ca-certificates curl -y" "installing necessary packages"
+
+  runCommand "wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg" "adding main PHP repository for Debian - https://deb.sury.org"
+
+  runCommand "sh -c 'echo \"deb https://packages.sury.org/php/ \$(lsb_release -sc) main\" > /etc/apt/sources.list.d/php.list'"
+
+  runCommand "apt -y update"
+
+  runCOmmand "apt -y install php8.0 php8.0-{cli,fpm,json,common,mysql,zip,gd,mbstring,curl,xml,pear,bcmath}" "installing php8.0"
 
   dbInstall
 
