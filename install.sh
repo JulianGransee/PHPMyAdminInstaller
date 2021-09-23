@@ -246,7 +246,7 @@ function mainPart() {
 
   runCommand "apt -y upgrade"
 
-  runCommand "apt install apache2 libapache2-mod-php mariadb-server pwgen expect iproute2 wget zip apt-transport-https lsb-release ca-certificates curl -y" "installing necessary packages"
+  runCommand "apt install apache2 mariadb-server pwgen expect iproute2 wget zip apt-transport-https lsb-release ca-certificates curl -y" "installing necessary packages"
 
   runCommand "wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg" "adding main PHP repository for Debian - https://deb.sury.org"
 
@@ -254,7 +254,7 @@ function mainPart() {
 
   runCommand "apt -y update"
 
-  runCommand "apt -y install php8.0 php8.0-{cli,fpm,common,mysql,zip,gd,mbstring,curl,xml,bcmath}" "installing php8.0"
+  runCommand "apt -y install php8.0 php8.0-{cli,fpm,common,mysql,zip,gd,mbstring,curl,xml,bcmath}  libapache2-mod-php8.0" "installing php8.0"
 
   dbInstall
 
