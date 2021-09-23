@@ -254,7 +254,7 @@ function mainPart() {
 
   runCommand "apt -y update"
 
-  runCOmmand "apt -y install php8.0 php8.0-{cli,fpm,json,common,mysql,zip,gd,mbstring,curl,xml,pear,bcmath}" "installing php8.0"
+  runCommand "apt -y install php8.0 php8.0-{cli,fpm,json,common,mysql,zip,gd,mbstring,curl,xml,pear,bcmath}" "installing php8.0"
 
   dbInstall
 
