@@ -248,6 +248,8 @@ function mainPart() {
 
   runCommand "apt install apache2 mariadb-server pwgen expect iproute2 wget zip apt-transport-https lsb-release ca-certificates curl -y" "installing necessary packages"
 
+  runCommand "service mariadb start || service mysql start"
+
   runCommand "wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg" "adding main PHP repository for Debian - https://deb.sury.org"
 
   runCommand "sh -c 'echo \"deb https://packages.sury.org/php/ \$(lsb_release -sc) main\" > /etc/apt/sources.list.d/php.list'"
