@@ -246,7 +246,7 @@ function mainPart() {
 
   runCommand "apt -y upgrade"
 
-  runCommand "apt install apache2 mariadb-server pwgen expect iproute2 wget zip apt-transport-https lsb-release ca-certificates curl -y" "installing necessary packages"
+  runCommand "apt install apache2 mariadb-server pwgen expect iproute2 wget zip apt-transport-https lsb-release ca-certificates curl dialog -y" "installing necessary packages"
 
   runCommand "service mariadb start || service mysql start"
 
