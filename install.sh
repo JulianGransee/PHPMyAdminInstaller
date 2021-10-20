@@ -48,8 +48,6 @@ This is free software, and you are welcome to redistribute it under certain cond
 sleep 2
 clear
 
-  ipaddress=$( ip route get 1.1.1.1 | awk -F"src " 'NR==1{split($2,a," ");print a[1]}' )
-
   while [ -z $dynuser ]; do
   read -ep $'\e[37mPlease enter a name for the MySQL user you want to use later to log in to PHPMyAdmin:\e[0m ' dynuser;
   done
@@ -67,6 +65,26 @@ clear
 
 }
 
+function serverCheck() {
+  status "running some checks"
+  mariadb --version
+  if [[ $? != 127 ]]; then
+    status "It looks like mariadb is already installed\nShould it be removed?" "/"
+    export OPTIONS=("Remove the MariaDB/MySQL server and every database" "Exit the script ")
+    bashSelect
+    case $? in
+      0 )
+        status "removing MariaDB/MySQL"
+        runCommand "service mariadb stop || service mysql stop"
+        runCommand "DEBIAN_FRONTEND=noninteractiv apt -y remove --purge mariadb-*"
+        runCommand "rm -r /var/lib/mysql/"
+        ;;
+      1 )
+        exit 0
+        ;;
+    esac
+  fi
+}
 
 function webserverInstall(){
   runCommand "printf '
@@ -146,7 +164,9 @@ function dbInstall(){
   	dynamicUserPassword=$( pwgen 32 1 );
   fi
 
-  SECURE_MYSQL=$(expect -c "
+  status "securing the mariadb installation"
+
+  expect -c "
   set timeout 3
   spawn mysql_secure_installation
   expect \"Enter current password for root (enter for none):\"
@@ -165,9 +185,7 @@ function dbInstall(){
   send \"y\r\"
   expect \"Reload privilege tables now?\"
   send \"y\r\"
-  expect eof
-  ")
-  runCommand "echo ${SECURE_MYSQL}" "securing the mariadb installation"
+  expect eof" > /dev/null
 
 }
 
@@ -235,7 +253,7 @@ function pmaInstall() {
 
   runCommand "chown -R www-data:www-data /var/lib/phpmyadmin" "rights are granted"
 
-  runCommand "service mysql start" "importing PHPMyAdmin's \"creating_tables.sql\""
+  runCommand "service mariadb start || service mysql start" "importing PHPMyAdmin's \"creating_tables.sql\""
 
   runCommand "mariadb < /usr/share/phpmyadmin/sql/create_tables.sql"
 
@@ -262,7 +280,7 @@ function mainPart() {
 
   pmaInstall
 
-  runCommand "service mysql restart"
+  runCommand "service mariadb restart || service mysql restart"
 
   runCommand "mariadb -e \"GRANT SELECT, INSERT, UPDATE, DELETE ON phpmyadmin.* TO 'pma'@'localhost' IDENTIFIED BY '${pmaPassword}'\"" "creating MySQL users and granting privileges"
 
@@ -273,6 +291,8 @@ function mainPart() {
 }
 
 function selfTest() {
+
+  ipaddress=$( ip route get 1.1.1.1 | awk -F"src " 'NR==1{split($2,a," ");print a[1]}' )
 
   status "Running some very basic self tests"
   status "Running apache2 self tests (using curl)"
@@ -331,8 +351,11 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+source <(curl -s https://raw.githubusercontent.com/GermanJag/BashSelect.sh/main/BashSelect.sh)
 
 input
+
+serverCheck
 
 mainPart
 
