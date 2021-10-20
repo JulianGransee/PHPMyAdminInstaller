@@ -21,7 +21,11 @@ reset='\033[0;0m'
 
 status(){
   clear
-  echo -e $green$@'...'$reset
+  if [[ "$2" == "/" ]]; then
+    echo -e $green$1$reset
+  else
+    echo -e $green$@'...'$reset
+  fi
   sleep 1
 }
 
