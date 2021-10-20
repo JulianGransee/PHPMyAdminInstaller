@@ -84,6 +84,20 @@ function serverCheck() {
         ;;
     esac
   fi
+
+  if [[ -d /usr/share/phpmyadmin ]]; then
+    status "It looks like the phpmyadmin directory already exists" "/"
+    export OPTIONS=("Remove the /usr/share/phpmyadmin directory" "Exit the script ")
+    bashSelect
+    case $? in
+      0 )
+        runCommand "rm -r /usr/share/phpmyadmin/" "removing /usr/share/phpmyadmin"
+        ;;
+      1 )
+        exit 0
+        ;;
+    esac
+  fi
 }
 
 function webserverInstall(){
