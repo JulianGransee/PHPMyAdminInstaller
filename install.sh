@@ -310,6 +310,30 @@ function mainPart() {
   runCommand "apt -y upgrade"
 
   runCommand "apt install apache2 mariadb-server pwgen expect iproute2 wget zip apt-transport-https lsb-release ca-certificates curl dialog -y" "installing necessary packages"
+status(){
+  clear
+  if [[ "$2" == "/" ]]; then
+    echo -e $green$1$reset
+  else
+    echo -e $green$@'...'$reset
+  fi
+  sleep 1
+}
+
+runCommand(){
+    COMMAND=$1
+
+    if [[ ! -z "$2" ]]; then
+      status $2
+    fi
+
+    eval $COMMAND;
+    BASH_CODE=$?
+    if [ $BASH_CODE -ne 0 ]; then
+      echo -e "${red}An error occurred:${reset} ${white}${COMMAND}${reset}${red} returned${reset} ${white}${BASH_CODE}${reset}"
+      exit ${BASH_CODE}
+    fi
+}
 
   runCommand "service mariadb start || service mysql start"
 
@@ -367,7 +391,11 @@ function selfTest() {
 function output() {
   clear
 
-  echo "
+  if [[ $saveOutput == "true" ]]; then
+    additions=" > /root/.mariadbPhpma.output"
+  fi
+
+  eval "echo \"
   MySQL-Data:
      IP/Host: localhost
      Port: 3306
@@ -378,7 +406,7 @@ function output() {
      Link: http://${ipaddress}/phpmyadmin/
      User: ${dynuser}
      Password: ${dynamicUserPassword}
-  "
+  \" ${additions}"
 }
 
 
@@ -387,6 +415,26 @@ if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root" 1>&2
    exit 1
 fi
+
+while getopts ":sh" option; do
+  case $option in
+    h )
+      echo "This is just a simple script to install PHPMyAdmin, Apache2 and MariaDB on Debian based systems."
+      echo
+      echo "Syntax: bash <(curl -s https://raw.githubusercontent.com/GermanJag/PHPMyAdminInstaller/main/install.sh) [-h|-wf]"
+      echo
+      echo "options:"
+      echo "h  -  Print this help menu"
+      echo "s  -  save the output in /root/.mariadbPhpma.output"
+      echo ""
+      exit
+      ;;
+    s )
+      status "The output is written to a file"
+      saveOutput=true
+      ;;
+  esac
+done
 
 source <(curl -s https://raw.githubusercontent.com/GermanJag/BashSelect.sh/main/BashSelect.sh)
 
