@@ -170,6 +170,33 @@ function webserverInstall(){
   runCommand "a2enconf phpmyadmin.conf"
 
   runCommand "service apache2 reload"
+
+  phpinstall
+
+  runCommand "service apache2 restart"
+
+}
+
+function phpinstall() {
+
+  eval $( cat /etc/*release* )
+  if [[ "$ID" == "debian" ]]; then
+
+    runCommand "wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg" "adding main PHP repository for Debian - https://deb.sury.org"
+
+    runCommand "sh -c 'echo \"deb https://packages.sury.org/php/ \$(lsb_release -sc) main\" > /etc/apt/sources.list.d/php.list'"
+
+    runCommand "apt -y update"
+
+    runCommand "apt -y install php8.0 php8.0-{cli,fpm,common,mysql,zip,gd,mbstring,curl,xml,bcmath}  libapache2-mod-php8.0" "installing php8.0"
+
+  else
+
+    runCommand "apt -y install php php-{cli,fpm,common,mysql,zip,gd,mbstring,curl,xml,bcmath}  libapache2-mod-php" "installing default php version"
+
+  fi
+
+
 }
 
 function dbInstall(){
@@ -285,14 +312,6 @@ function mainPart() {
   runCommand "apt install apache2 mariadb-server pwgen expect iproute2 wget zip apt-transport-https lsb-release ca-certificates curl dialog -y" "installing necessary packages"
 
   runCommand "service mariadb start || service mysql start"
-
-  runCommand "wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg" "adding main PHP repository for Debian - https://deb.sury.org"
-
-  runCommand "sh -c 'echo \"deb https://packages.sury.org/php/ \$(lsb_release -sc) main\" > /etc/apt/sources.list.d/php.list'"
-
-  runCommand "apt -y update"
-
-  runCommand "apt -y install php8.0 php8.0-{cli,fpm,common,mysql,zip,gd,mbstring,curl,xml,bcmath}  libapache2-mod-php8.0" "installing php8.0"
 
   dbInstall
 
