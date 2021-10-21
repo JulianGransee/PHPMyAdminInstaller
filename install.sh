@@ -421,7 +421,7 @@ while getopts ":sh" option; do
     h )
       echo "This is just a simple script to install PHPMyAdmin, Apache2 and MariaDB on Debian based systems."
       echo
-      echo "Syntax: bash <(curl -s https://raw.githubusercontent.com/GermanJag/PHPMyAdminInstaller/main/install.sh) [-h|-wf]"
+      echo "Syntax: bash <(curl -s https://raw.githubusercontent.com/GermanJag/PHPMyAdminInstaller/main/install.sh) [-h|-s]"
       echo
       echo "options:"
       echo "h  -  Print this help menu"
