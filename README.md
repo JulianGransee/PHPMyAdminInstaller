@@ -19,7 +19,7 @@ bash <(curl -s https://raw.githubusercontent.com/GermanJag/PHPMyAdminInstaller/m
 |                  | 21.04   | :white_check_mark:
 
 
-#usage
+## usage
 
 Syntax:
 ```
