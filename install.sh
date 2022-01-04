@@ -46,10 +46,6 @@ runCommand(){
 
 function input() {
 
-  echo -e "${green}PHPMyAdmin install script 1.0, Copyright (C) 2021 Julian G. \n\
-Gnomovision comes with ABSOLUTELY NO WARRANTY; for details look up the repository https://github.com/GermanJag/PHPMyAdminInstaller.\n\
-This is free software, and you are welcome to redistribute it under certain conditions; Look up https://github.com/GermanJag/PHPMyAdminInstaller/blob/main/LICENSE for details."
-sleep 2
 clear
 
   while [ -z $dynuser ]; do
@@ -211,26 +207,14 @@ function dbInstall(){
 
   status "securing the mariadb installation"
 
-  expect -c "
-  set timeout 3
-  spawn mysql_secure_installation
-  expect \"Enter current password for root (enter for none):\"
-  send \"\r\"
-  expect \"root password?\"
-  send \"y\r\"
-  expect \"New password:\"
-  send \"$rootPasswordMariaDB\r\"
-  expect \"Re-enter new password:\"
-  send \"$rootPasswordMariaDB\r\"
-  expect \"Remove anonymous users?\"
-  send \"y\r\"
-  expect \"Disallow root login remotely?\"
-  send \"y\r\"
-  expect \"Remove test database and access to it?\"
-  send \"y\r\"
-  expect \"Reload privilege tables now?\"
-  send \"y\r\"
-  expect eof" > /dev/null
+
+  mariadb -u root -p$rootPasswordMariaDB -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${rootPasswordMariaDB}';"
+  mariadb -u root -p$rootPasswordMariaDB -e "DELETE FROM mysql.user WHERE User='';"
+  mariadb -u root -p$rootPasswordMariaDB -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');';"
+  mariadb -u root -p$rootPasswordMariaDB -e "DROP DATABASE IF EXISTS test;"
+  mariadb -u root -p$rootPasswordMariaDB -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
+  mariadb -u root -p$rootPasswordMariaDB -e "FLUSH PRIVILEGES;"
+
 
 }
 
@@ -300,7 +284,8 @@ function pmaInstall() {
 
   runCommand "service mariadb start || service mysql start" "importing PHPMyAdmin's \"creating_tables.sql\""
 
-  runCommand "mariadb < /usr/share/phpmyadmin/sql/create_tables.sql"
+  echo $rootPasswordMariaDB
+  runCommand "mariadb -u root -p${rootPasswordMariaDB} < /usr/share/phpmyadmin/sql/create_tables.sql"
 
 }
 
@@ -343,9 +328,9 @@ runCommand(){
 
   runCommand "service mariadb restart || service mysql restart"
 
-  runCommand "mariadb -e \"GRANT SELECT, INSERT, UPDATE, DELETE ON phpmyadmin.* TO 'pma'@'localhost' IDENTIFIED BY '${pmaPassword}'\"" "creating MySQL users and granting privileges"
+  runCommand "mariadb -u root -p${rootPasswordMariaDB} -e \"GRANT SELECT, INSERT, UPDATE, DELETE ON phpmyadmin.* TO 'pma'@'localhost' IDENTIFIED BY '${pmaPassword}'\"" "creating MySQL users and granting privileges"
 
-  runCommand "mariadb -e \"GRANT ALL PRIVILEGES ON \$( printf '\52' ).\$( printf '\52' ) TO '${dynuser}'@'localhost' IDENTIFIED BY '${dynamicUserPassword}' WITH GRANT OPTION;\""
+  runCommand "mariadb -u root -p${rootPasswordMariaDB} -e \"GRANT ALL PRIVILEGES ON \$( printf '\52' ).\$( printf '\52' ) TO '${dynuser}'@'localhost' IDENTIFIED BY '${dynamicUserPassword}' WITH GRANT OPTION;\""
 
   webserverInstall
 
@@ -376,7 +361,7 @@ function selfTest() {
 
   MARIADB_TEST_PASSED=true
 
-  SHOW_DATABASES=$(mariadb -e "SHOW DATABASES;")
+  SHOW_DATABASES=$(mariadb -u root -p$rootPasswordMariaDB -e "SHOW DATABASES;")
 
   if [[ "${SHOW_DATABASES}" != *"phpmyadmin"* ]]; then MARIADB_TEST_PASSED=false; fi
 
