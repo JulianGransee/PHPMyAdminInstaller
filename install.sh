@@ -396,6 +396,7 @@ function output() {
 
   if [[ $saveOutput == "true" ]]; then
     additions=" > /root/.mariadbPhpma.output"
+    echo "${rootPasswordMariaDB}" > /root/.mariadbRoot
   fi
   echo "Save the following!\n\n"
   eval "echo \"
