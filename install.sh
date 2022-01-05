@@ -46,22 +46,55 @@ runCommand(){
 
 function input() {
 
-clear
+  clear
 
-  while [ -z $dynuser ]; do
-  read -ep $'\e[37mPlease enter a name for the MySQL user you want to use later to log in to PHPMyAdmin:\e[0m ' dynuser;
-  done
-  while [ -z $dynamicUserPassword ]; do
-  read -ep $'\e[37mPassword for \e[0m\e[36m'$dynuser$'\e[0m\e[37m (\"\e[33mauto\e[0m\"\e[37m for an automatically generated password):\e[0m ' dynamicUserPassword;
-  done
+  status "Create a special account for PHPMyAdmin access (this is going to disable the PHPMyAdmin access with root)?" "/"
 
-  generatePassword="false";
-  dynamicUserPassword=`echo $dynamicUserPassword | sed 's/ *$//g'`
-  if [[ "${dynamicUserPassword,,%%*( )}" == "auto" ]]; then
+  export OPTIONS=("No, keep it simple" "Yes, I want security")
+    bashSelect
+    case $? in
+      0 )
+        status "okay"
+        rootLogin="y"
+      ;;
+      1 )
+        rootLogin="n";
 
-  	generatePassword="true";
+        #readUname
+        while [ -z $dynuser ]; do
+           dynuser=$( echo $dynuser | sed 's/ //g' | sed 's/[^a-z]//g' )
+           read -ep $'\e[37mPlease enter a name for the MySQL user you want to use later to log in to PHPMyAdmin:\e[0m ' dynuser;
+           if [[ "${dynuser,,%%*( )}" == "root" ]]; then
+             unset dynuser
+           fi
 
-  fi
+        done
+
+         status "Set a password" "/"
+         export OPTIONS=("Let the script generate a secure passwort" "No, I will do it myself")
+         bashSelect
+           case $? in
+             0 )
+               generatePassword="true";
+             ;;
+             1 )
+               while [ -z $dynamicUserPassword ]; do
+                 read -ep $'\e[37mPassword for \e[0m\e[36m'$dynuser$'\e[0m\e[37m:\e[0m ' dynamicUserPassword;
+               done
+               generatePassword="false";
+               dynamicUserPassword=`echo $dynamicUserPassword | sed 's/ *$//g'`
+                if [[ "${dynamicUserPassword,,%%*( )}" == "auto" ]]; then
+
+                  generatePassword="true";
+
+                fi
+
+             ;;
+             esac
+
+
+      ;;
+    esac
 
 }
 
@@ -75,7 +108,7 @@ function serverCheck() {
     case $? in
       0 )
         status "removing MariaDB/MySQL"
-        runCommand "service mariadb stop || service mysql stop"
+        runCommand "service mariadb stop || service mysql stop || systemctl stop mariadb"
         runCommand "DEBIAN_FRONTEND=noninteractiv apt -y remove --purge mariadb-*"
         runCommand "rm -r /var/lib/mysql/"
         ;;
@@ -278,15 +311,19 @@ function pmaInstall() {
 
   runCommand "sed -i 's/\/\/ \$cfg\[\x27Servers\x27\]\[\$i\]\[\x27export_templates\x27\] \= \x27pma__export_templates\x27\;/\$cfg\[\x27Servers\x27\]\[\$i\]\[\x27export_templates\x27\] \= \x27pma__export_templates\x27\;/' /usr/share/phpmyadmin/config.inc.php"
 
+  if [[ "${rootLogin}" == "n" ]]; then
+
+  runCommand "echo \"\\\$cfg['Servers'][\\\$i]['export_templates'] = false;\" >> /usr/share/phpmyadmin/config.inc.php"
+
+  fi
+
   runCommand "printf \"\\\$cfg[\'TempDir\'] = \'/var/lib/phpmyadmin/tmp\';\" >> /usr/share/phpmyadmin/config.inc.php"
 
   runCommand "chown -R www-data:www-data /var/lib/phpmyadmin" "rights are granted"
 
-  runCommand "service mariadb start || service mysql start" "importing PHPMyAdmin's \"creating_tables.sql\""
+  runCommand "service mariadb start || service mysql start || systemclt start mariadb" "importing PHPMyAdmin's \"creating_tables.sql\""
 
-  echo $rootPasswordMariaDB
   runCommand "mariadb -u root -p${rootPasswordMariaDB} < /usr/share/phpmyadmin/sql/create_tables.sql"
-
 }
 
 function mainPart() {
@@ -294,43 +331,24 @@ function mainPart() {
 
   runCommand "apt -y upgrade"
 
-  runCommand "apt install apache2 mariadb-server pwgen expect iproute2 wget zip apt-transport-https lsb-release ca-certificates curl dialog -y" "installing necessary packages"
-status(){
-  clear
-  if [[ "$2" == "/" ]]; then
-    echo -e $green$1$reset
-  else
-    echo -e $green$@'...'$reset
-  fi
-  sleep 1
-}
+  runCommand "apt install -y apache2 mariadb-server pwgen expect iproute2 wget zip apt-transport-https lsb-release ca-certificates curl dialog" "installing necessary packages"
 
-runCommand(){
-    COMMAND=$1
-
-    if [[ ! -z "$2" ]]; then
-      status $2
-    fi
-
-    eval $COMMAND;
-    BASH_CODE=$?
-    if [ $BASH_CODE -ne 0 ]; then
-      echo -e "${red}An error occurred:${reset} ${white}${COMMAND}${reset}${red} returned${reset} ${white}${BASH_CODE}${reset}"
-      exit ${BASH_CODE}
-    fi
-}
-
-  runCommand "service mariadb start || service mysql start"
+  runCommand "service mariadb start || service mysql start || systemctl start mariadb"
 
   dbInstall
 
   pmaInstall
 
-  runCommand "service mariadb restart || service mysql restart"
+  runCommand "service mariadb restart || service mysql restart || systemctl restart mariadb"
 
   runCommand "mariadb -u root -p${rootPasswordMariaDB} -e \"GRANT SELECT, INSERT, UPDATE, DELETE ON phpmyadmin.* TO 'pma'@'localhost' IDENTIFIED BY '${pmaPassword}'\"" "creating MySQL users and granting privileges"
 
+  if [[ "${rootLogin}" == "n" ]]; then
+
   runCommand "mariadb -u root -p${rootPasswordMariaDB} -e \"GRANT ALL PRIVILEGES ON \$( printf '\52' ).\$( printf '\52' ) TO '${dynuser}'@'localhost' IDENTIFIED BY '${dynamicUserPassword}' WITH GRANT OPTION;\""
+
+  fi
+
 
   webserverInstall
 
@@ -379,19 +397,25 @@ function output() {
   if [[ $saveOutput == "true" ]]; then
     additions=" > /root/.mariadbPhpma.output"
   fi
-
+  echo "Save the following!\n\n"
   eval "echo \"
-  MySQL-Data:
+  MariaDB-Data:
      IP/Host: localhost
      Port: 3306
      User: root
-     Password: ${rootPasswordMariaDB}
+     Password: ${rootPasswordMariaDB}\" ${additions}"
 
+   if [[ "${rootLogin}" == "n" ]]; then
+   eval "echo \"
   PHPMyAdmin-Data:
      Link: http://${ipaddress}/phpmyadmin/
      User: ${dynuser}
      Password: ${dynamicUserPassword}
   \" ${additions}"
+  else
+  eval "echo \"
+      Link: http://${ipaddress}/phpmyadmin/\" ${additions}"
+  fi
 }
 
 
@@ -420,6 +444,9 @@ while getopts ":sh" option; do
       ;;
   esac
 done
+
+curl --version
+if [[ $? == 127  ]]; then  apt -y install curl; fi
 
 source <(curl -s https://raw.githubusercontent.com/GermanJag/BashSelect.sh/main/BashSelect.sh)
 
