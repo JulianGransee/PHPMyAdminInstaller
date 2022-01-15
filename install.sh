@@ -395,27 +395,43 @@ function output() {
   clear
 
   if [[ $saveOutput == "true" ]]; then
-    additions=" > /root/.mariadbPhpma.output"
-    echo "${rootPasswordMariaDB}" > /root/.mariadbRoot
+    echo "
+    MariaDB-Data:
+       IP/Host: localhost
+       Port: 3306
+       User: root
+       Password: ${rootPasswordMariaDB} " > /root/.mariadbPhpma
+       echo "${rootPasswordMariaDB}" > /root/.mariadbRoot
+       if [[ "${rootLogin}" == "n" ]]; then
+         echo "
+    PHPMyAdmin-Data:
+      Link: http://${ipaddress}/phpmyadmin/
+      User: ${dynuser}
+      Password: ${dynamicUserPassword}" > /root/.PHPma
+      else
+      echo "Link: http://${ipaddress}/phpmyadmin/ " > /root/.PHPma
+      fi
+      printf "\nOutput saved in /root/.mariadbPhpma, /root/.PHPma and /root/.mariadbRoot"
   fi
-  echo "Save the following!\n\n"
-  eval "echo \"
+
+  printf "\nSave the following:\n\n"
+  echo "
   MariaDB-Data:
      IP/Host: localhost
      Port: 3306
      User: root
-     Password: ${rootPasswordMariaDB}\" ${additions}"
+     Password: ${rootPasswordMariaDB}"
 
    if [[ "${rootLogin}" == "n" ]]; then
-   eval "echo \"
+   echo "
   PHPMyAdmin-Data:
      Link: http://${ipaddress}/phpmyadmin/
      User: ${dynuser}
      Password: ${dynamicUserPassword}
-  \" ${additions}"
+     "
   else
-  eval "echo \"
-      Link: http://${ipaddress}/phpmyadmin/\" ${additions}"
+  echo "
+      Link: http://${ipaddress}/phpmyadmin/"
   fi
 }
 
