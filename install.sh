@@ -108,8 +108,7 @@ function serverCheck() {
     case $? in
       0 )
         status "removing MariaDB/MySQL"
-        runCommand "service mariadb stop || service mysql stop || systemctl stop mariadb"
-        runCommand "DEBIAN_FRONTEND=noninteractiv apt -y remove --purge mariadb-*"
+        runCommand "service mariadb stop || service mysql stop || systemctl stop mariadb; DEBIAN_FRONTEND=noninteractiv apt -y remove --purge mariadb-*"
         runCommand "rm -r /var/lib/mysql/"
         ;;
       1 )
