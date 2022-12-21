@@ -252,7 +252,13 @@ function dbInstall(){
 
 function pmaInstall() {
 
-  runCommand "wget https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip" "downloading PHPMyAdmin"
+  ipv6=$( wget -qO- -t1 -T2 ipv6.icanhazip.com )
+
+  if [[ "$ipv6" != "" ]]; then
+      runCommand "wget https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip" "downloading PHPMyAdmin"
+  else 
+      runCommand "wget --inet4-only https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip" "downloading PHPMyAdmin"
+  fi
 
   runCommand "unzip phpMyAdmin-latest-all-languages.zip" "unpacking PHPMyAdmin"
 
