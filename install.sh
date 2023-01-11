@@ -236,7 +236,7 @@ function phpinstall() {
 function dbInstall(){
 
   status "generating passwords"
-  rootPasswordMariaDB=$( pwgen 32 1 );
+  rootPasswordMariaDB=$( pwgen 16 1 );
   pmaPassword=$( pwgen 32 1 );
   blowfish_secret=$( pwgen 32 1 );
   if [[ "${generatePassword}" == "true" ]]; then
