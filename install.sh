@@ -332,7 +332,7 @@ function pmaInstall() {
 
   runCommand "chown -R www-data:www-data /var/lib/phpmyadmin" "rights are granted"
 
-  runCommand "service mariadb start || service mysql start || systemclt start mariadb" "importing PHPMyAdmin's \"creating_tables.sql\""
+  runCommand "service mariadb start || service mysql start || systemctl start mariadb" "importing PHPMyAdmin's \"creating_tables.sql\""
 
   runCommand "mariadb -u root -p${rootPasswordMariaDB} < /usr/share/phpmyadmin/sql/create_tables.sql"
 }
