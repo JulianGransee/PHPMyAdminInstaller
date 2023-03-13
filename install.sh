@@ -248,7 +248,7 @@ function dbInstall(){
 
   mariadb -u root -p$rootPasswordMariaDB -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${rootPasswordMariaDB}';"
   mariadb -u root -p$rootPasswordMariaDB -e "DELETE FROM mysql.user WHERE User='';"
-  mariadb -u root -p$rootPasswordMariaDB -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');';"
+  mariadb -u root -p$rootPasswordMariaDB -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
   mariadb -u root -p$rootPasswordMariaDB -e "DROP DATABASE IF EXISTS test;"
   mariadb -u root -p$rootPasswordMariaDB -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
   mariadb -u root -p$rootPasswordMariaDB -e "FLUSH PRIVILEGES;"
