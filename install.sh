@@ -246,12 +246,12 @@ function dbInstall(){
   status "securing the mariadb installation"
 
 
-  mariadb -u root -p$rootPasswordMariaDB -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${rootPasswordMariaDB}';"
-  mariadb -u root -p$rootPasswordMariaDB -e "DELETE FROM mysql.user WHERE User='';"
-  mariadb -u root -p$rootPasswordMariaDB -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
-  mariadb -u root -p$rootPasswordMariaDB -e "DROP DATABASE IF EXISTS test;"
-  mariadb -u root -p$rootPasswordMariaDB -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
-  mariadb -u root -p$rootPasswordMariaDB -e "FLUSH PRIVILEGES;"
+  mariadb -u root -p $rootPasswordMariaDB -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${rootPasswordMariaDB}';"
+  mariadb -u root -p $rootPasswordMariaDB -e "DELETE FROM mysql.user WHERE User='';"
+  mariadb -u root -p $rootPasswordMariaDB -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
+  mariadb -u root -p $rootPasswordMariaDB -e "DROP DATABASE IF EXISTS test;"
+  mariadb -u root -p $rootPasswordMariaDB -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
+  mariadb -u root -p $rootPasswordMariaDB -e "FLUSH PRIVILEGES;"
 
 
 }
@@ -334,7 +334,7 @@ function pmaInstall() {
 
   runCommand "service mariadb start || service mysql start || systemctl start mariadb" "importing PHPMyAdmin's \"creating_tables.sql\""
 
-  runCommand "mariadb -u root -p${rootPasswordMariaDB} < /usr/share/phpmyadmin/sql/create_tables.sql"
+  runCommand "mariadb -u root -p ${rootPasswordMariaDB} < /usr/share/phpmyadmin/sql/create_tables.sql"
 }
 
 function mainPart() {
@@ -352,11 +352,11 @@ function mainPart() {
 
   runCommand "service mariadb restart || service mysql restart || systemctl restart mariadb"
 
-  runCommand "mariadb -u root -p${rootPasswordMariaDB} -e \"GRANT SELECT, INSERT, UPDATE, DELETE ON phpmyadmin.* TO 'pma'@'localhost' IDENTIFIED BY '${pmaPassword}'\"" "creating MySQL users and granting privileges"
+  runCommand "mariadb -u root -p ${rootPasswordMariaDB} -e \"GRANT SELECT, INSERT, UPDATE, DELETE ON phpmyadmin.* TO 'pma'@'localhost' IDENTIFIED BY '${pmaPassword}'\"" "creating MySQL users and granting privileges"
 
   if [[ "${rootLogin}" == "n" ]]; then
 
-  runCommand "mariadb -u root -p${rootPasswordMariaDB} -e \"GRANT ALL PRIVILEGES ON \$( printf '\52' ).\$( printf '\52' ) TO '${dynuser}'@'localhost' IDENTIFIED BY '${dynamicUserPassword}' WITH GRANT OPTION;\""
+  runCommand "mariadb -u root -p ${rootPasswordMariaDB} -e \"GRANT ALL PRIVILEGES ON \$( printf '\52' ).\$( printf '\52' ) TO '${dynuser}'@'localhost' IDENTIFIED BY '${dynamicUserPassword}' WITH GRANT OPTION;\""
 
   fi
 
@@ -390,7 +390,7 @@ function selfTest() {
 
   MARIADB_TEST_PASSED=true
 
-  SHOW_DATABASES=$(mariadb -u root -p$rootPasswordMariaDB -e "SHOW DATABASES;")
+  SHOW_DATABASES=$(mariadb -u root -p $rootPasswordMariaDB -e "SHOW DATABASES;")
 
   if [[ "${SHOW_DATABASES}" != *"phpmyadmin"* ]]; then MARIADB_TEST_PASSED=false; fi
 
