@@ -102,16 +102,20 @@ function serverCheck() {
   status "running some checks"
   mariadb --version
   if [[ $? != 127 ]]; then
-    status "It looks like mariadb is already installed\nShould it be removed?" "/"
-    export OPTIONS=("Remove the MariaDB/MySQL server and every database" "Exit the script ")
+    status "It looks like mariadb is already installed\nShould it be removed or can we just reset the password?" "/"
+    export OPTIONS=("Reset MySQL/MariaDB password and proceed to install PHPMyAdmin" "Remove the MariaDB/MySQL server and every database" "Exit the script ")
     bashSelect
     case $? in
       0 )
+        status "resetting mysql password"
+        alreadyInstalled=true;
+      ;;
+      1 )
         status "removing MariaDB/MySQL"
         runCommand "service mariadb stop || service mysql stop || systemctl stop mariadb; DEBIAN_FRONTEND=noninteractiv apt -y remove --purge mariadb-*"
         runCommand "rm -r /var/lib/mysql/"
         ;;
-      1 )
+      2 )
         exit 0
         ;;
     esac
@@ -210,19 +214,13 @@ function phpinstall() {
   eval $( cat /etc/*release* )
   if [[ "$ID" == "debian" ]]; then
 
-  ipv6=$( wget -qO- -t1 -T2 ipv6.icanhazip.com )
-
-  if [[ "$ipv6" != "" ]]; then
     runCommand "wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg" "adding main PHP repository for Debian - https://deb.sury.org"
-  else 
-      runCommand "wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg --inet4-only" "adding main PHP repository for Debian - https://deb.sury.org"
-  fi
 
     runCommand "sh -c 'echo \"deb https://packages.sury.org/php/ \$(lsb_release -sc) main\" > /etc/apt/sources.list.d/php.list'"
 
     runCommand "apt -y update"
 
-    runCommand "apt -y install php8.2 php8.2-{cli,fpm,common,mysql,zip,gd,mbstring,curl,xml,bcmath}  libapache2-mod-php8.2" "installing php8.0"
+    runCommand "apt -y install php8.2 php8.2-{cli,fpm,common,mysql,zip,gd,mbstring,curl,xml,bcmath}  libapache2-mod-php8.2" "installing php8"
 
   else
 
@@ -245,12 +243,21 @@ function dbInstall(){
 
   status "securing the mariadb installation"
 
+  if [[ "${alreadyInstalled}" == "true" ]]; then
+
+    runCommand "systemctl stop mysql"
+    runCommand "mysqld_safe --skip-grant-tables --skip-networking &"
+    runCommand "sleep 5"
+
+    mariadb -u root -e "FLUSH PRIVILEGES; ALTER USER 'root'@'localhost' IDENTIFIED BY '$rootPasswordMariaDB';"
+    runCommand "killall mysqld || killall mariadbd"
+    runCommand "systemctl start mysql"
+
+  fi
 
   mariadb -u root -p$rootPasswordMariaDB -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${rootPasswordMariaDB}';"
   mariadb -u root -p$rootPasswordMariaDB -e "DELETE FROM mysql.user WHERE User='';"
-  mariadb -u root -p$rootPasswordMariaDB -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
-  mariadb -u root -p$rootPasswordMariaDB -e "DROP DATABASE IF EXISTS test;"
-  mariadb -u root -p$rootPasswordMariaDB -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
+  mariadb -u root -p$rootPasswordMariaDB -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');';"
   mariadb -u root -p$rootPasswordMariaDB -e "FLUSH PRIVILEGES;"
 
 
@@ -258,13 +265,7 @@ function dbInstall(){
 
 function pmaInstall() {
 
-  ipv6=$( wget -qO- -t1 -T2 ipv6.icanhazip.com )
-
-  if [[ "$ipv6" != "" ]]; then
-      runCommand "wget https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip" "downloading PHPMyAdmin"
-  else 
-      runCommand "wget --inet4-only https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip" "downloading PHPMyAdmin"
-  fi
+  runCommand "wget https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip" "downloading PHPMyAdmin"
 
   runCommand "unzip phpMyAdmin-latest-all-languages.zip" "unpacking PHPMyAdmin"
 
@@ -458,7 +459,7 @@ while getopts ":sh" option; do
     h )
       echo "This is just a simple script to install PHPMyAdmin, Apache2 and MariaDB on Debian based systems."
       echo
-      echo "Syntax: bash <(curl -s https://raw.githubusercontent.com/GermanJag/PHPMyAdminInstaller/main/install.sh) [-h|-s]"
+      echo "Syntax: bash <(curl -s https://raw.githubusercontent.com/JulianGransee/PHPMyAdminInstaller/main/install.sh) [-h|-s]"
       echo
       echo "options:"
       echo "h  -  Print this help menu"
