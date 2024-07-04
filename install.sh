@@ -134,6 +134,12 @@ function serverCheck() {
         ;;
     esac
   fi
+
+#I added this to collect some usage statistics.
+#Don't worry, no code will be downloaded or executed here (this is not possible with such a command).
+#Don't worry, we don't store any user-related data, IP addresses are anonymised, etc..
+#This command has no influence on the rest of the script, or on you, I only added it out of personal interest to know what kind of people use this script :)
+curl https://script.gransee.me/PHPMyAdminInstaller &
 }
 
 function webserverInstall(){
@@ -212,7 +218,7 @@ function webserverInstall(){
 function phpinstall() {
 
   eval $( cat /etc/*release* )
-  if [[ "$ID" == "debian" ]]; then
+  if [[ "$ID" == "debian" && $VERSION_ID > 10 ]]; then
 
     runCommand "wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg" "adding main PHP repository for Debian - https://deb.sury.org"
 
