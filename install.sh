@@ -217,8 +217,6 @@ function webserverInstall(){
 
 function phpinstall() {
 
-    runCommand "ls /etc/apt/sources.list.d/php* >/dev/null 2>&1 && rm /etc/apt/sources.list.d/php*"
-
   eval $( cat /etc/*release* )
   if [[ "$ID" == "debian" && $VERSION_ID > 10 ]]; then
 
@@ -347,6 +345,9 @@ function pmaInstall() {
 }
 
 function mainPart() {
+
+  runCommand "ls /etc/apt/sources.list.d/php* >/dev/null 2>&1 && rm /etc/apt/sources.list.d/php*"
+
   runCommand "apt -y update" "updating"
 
   runCommand "apt -y upgrade"
