@@ -346,7 +346,7 @@ function pmaInstall() {
 
 function mainPart() {
 
-  runCommand "ls /etc/apt/sources.list.d/php* >/dev/null 2>&1 && rm /etc/apt/sources.list.d/php*"
+  runCommand "ls /etc/apt/sources.list.d/php* >/dev/null 2>&1 && rm /etc/apt/sources.list.d/php* || echo 0"
 
   runCommand "apt -y update" "updating"
 
