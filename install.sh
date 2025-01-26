@@ -612,7 +612,7 @@ if [[ "${non_interactive}" == "true" ]]; then
 fi
 
 curl --version
-if [[ $? == 127  ]]; then  apt -y install curl; fi
+if [[ $? == 127  ]]; then  apt update -y && apt -y install curl; fi
 
 source <(curl -s https://raw.githubusercontent.com/JulianGransee/BashSelect.sh/main/BashSelect.sh)
 
