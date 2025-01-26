@@ -19,6 +19,14 @@ red='\033[0;31m'
 white='\033[0;37m'
 reset='\033[0;0m'
 
+non_interactive=false
+db_user=0
+db_password=0
+rootLogin=0
+reset_password=false
+remove_db=false
+remove_pma=false
+
 status(){
   clear
   if [[ "$2" == "/" ]]; then
