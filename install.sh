@@ -56,53 +56,64 @@ function input() {
 
   clear
 
-  status "Create a special account for PHPMyAdmin access (this is going to disable the PHPMyAdmin access with root)?" "/"
+  if [[ "${non_interactive}" == "false" ]]; then
 
-  export OPTIONS=("No, keep it simple" "Yes, I want security")
-    bashSelect
-    case $? in
-      0 )
-        status "okay"
-        rootLogin="y"
-      ;;
-      1 )
-        rootLogin="n";
+    status "Create a special account for PHPMyAdmin access (this is going to disable the PHPMyAdmin access with root)?" "/"
 
-        #readUname
-        while [ -z $dynuser ]; do
-           dynuser=$( echo $dynuser | sed 's/ //g' | sed 's/[^a-z]//g' )
-           read -ep $'\e[37mPlease enter a name for the MySQL user you want to use later to log in to PHPMyAdmin:\e[0m ' dynuser;
-           if [[ "${dynuser,,%%*( )}" == "root" ]]; then
-             unset dynuser
-           fi
+    export OPTIONS=("No, keep it simple" "Yes, I want security")
+      bashSelect
+      case $? in
+        0 )
+          status "okay"
+          rootLogin="y"
+        ;;
+        1 )
+          rootLogin="n";
+        ;;
+      esac
+  fi
 
-        done
-
-         status "Set a password" "/"
-         export OPTIONS=("Let the script generate a secure passwort" "No, I will do it myself")
-         bashSelect
-           case $? in
-             0 )
-               generatePassword="true";
-             ;;
-             1 )
-               while [ -z $dynamicUserPassword ]; do
-                 read -ep $'\e[37mPassword for \e[0m\e[36m'$dynuser$'\e[0m\e[37m:\e[0m ' dynamicUserPassword;
-               done
-               generatePassword="false";
-               dynamicUserPassword=`echo $dynamicUserPassword | sed 's/ *$//g'`
-                if [[ "${dynamicUserPassword,,%%*( )}" == "auto" ]]; then
-
-                  generatePassword="true";
-
-                fi
-
-             ;;
-             esac
+  if [[ "${rootLogin}" == "y" ]]; then
+    return 0
+  fi
 
 
-      ;;
-    esac
+  if [[ "${db_user}" == "0" ]]; then
+
+    #readUname
+    while [ -z $dynuser ]; do
+      dynuser=$( echo $dynuser | sed 's/ //g' | sed 's/[^a-z]//g' )
+      read -ep $'\e[37mPlease enter a name for the MySQL user you want to use later to log in to PHPMyAdmin:\e[0m ' dynuser;
+      if [[ "${dynuser,,%%*( )}" == "root" ]]; then
+        unset dynuser
+      fi
+    done
+  fi
+  
+
+
+  if [[ "${db_password}" == "0" ]]; then
+
+    status "Set a password" "/"
+          
+      export OPTIONS=("Let the script generate a secure passwort" "No, I will do it myself")
+      bashSelect
+      case $? in
+        0 )
+          generatePassword="true";
+        ;;
+        1 )
+          while [ -z $dynamicUserPassword ]; do
+            read -ep $'\e[37mPassword for \e[0m\e[36m'$dynuser$'\e[0m\e[37m:\e[0m ' dynamicUserPassword;
+          done
+          generatePassword="false";
+          dynamicUserPassword=`echo $dynamicUserPassword | sed 's/ *$//g'`
+          if [[ "${dynamicUserPassword,,%%*( )}" == "auto" ]]; then
+            generatePassword="true";
+          fi
+        ;;
+      esac
+  fi
 
 }
 
