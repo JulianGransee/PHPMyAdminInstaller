@@ -463,22 +463,77 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-while getopts ":sh" option; do
-  case $option in
-    h )
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+    -h|--help)
       echo "This is just a simple script to install PHPMyAdmin, Apache2 and MariaDB on Debian based systems."
       echo
-      echo "Syntax: bash <(curl -s https://raw.githubusercontent.com/JulianGransee/PHPMyAdminInstaller/main/install.sh) [-h|-s]"
+      echo "Syntax: bash <(curl -s https://raw.githubusercontent.com/JulianGransee/PHPMyAdminInstaller/main/install.sh) [options]"
       echo
-      echo "options:"
-      echo "h  -  Print this help menu"
-      echo "s  -  save the output in /root/.mariadbPhpma.output"
-      echo ""
+      echo "Options:"
+      echo "  -h, --help                      Display this help message."
+      echo "  -s, --save                      Save the output to /root/.mariadbPhpma.output."
+      echo "      --non-interactive           Skip all interactive prompts by providing all required inputs as options."
+      echo "                                  Requires either --simple or --security to be specified."
+      echo "                                  When using --security, you must also provide --db_name and --db_password."
+      echo "      --simple                    Enable root access for phpMyAdmin (no security)."
+      echo "      --security                  Disable root access for phpMyAdmin (enhanced security)."
+      echo "      --db_name <name>            Specify a database name"
+      echo "      --db_password <password>    Set a custom password for the database."
+      echo "      --generate_password         Automatically generate a secure password for the database."
+      echo "      --reset_password            Reset the database password if one already exists."
+      echo "      --remove_db                 Remove MySQL/MariaDB and reinstall it."
+      echo "      --remove_pma                Remove phpMyAdmin and reinstall it if it already exists."
+      shift
       exit
       ;;
-    s )
+    -s|--save)
       status "The output is written to a file"
       saveOutput=true
+      shift
+      ;;
+    --non-interactive)
+      non_interactive=true
+      shift
+      ;;
+    --security)
+      rootLogin="n"
+      shift
+      ;;
+    --simple)
+      rootLogin="y"
+      shift
+      ;;
+    --db_user)
+      db_user="$2"
+      dynuser="${db_user}"
+      shift 2
+      ;;
+    --db_password)
+      db_password="$2"
+      generatePassword="false"
+      dynamicUserPassword="${db_password}"
+      shift 2
+      ;;
+    --generate_password)
+      generatePassword="true"
+      shift
+      ;;
+    --reset_password)
+      reset_password="true"
+      shift
+      ;;
+    --remove_db)
+      remove_db="true"
+      shift
+      ;;
+    --remove_pma)
+      remove_pma="true"
+      shift
+      ;;
+    *)
+      echo "Unknown option: $1"
+      exit 1
       ;;
   esac
 done
