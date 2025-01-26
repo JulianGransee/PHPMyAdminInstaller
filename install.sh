@@ -121,37 +121,65 @@ function serverCheck() {
   status "running some checks"
   mariadb --version
   if [[ $? != 127 ]]; then
-    status "It looks like mariadb is already installed\nShould it be removed or can we just reset the password?" "/"
-    export OPTIONS=("Reset MySQL/MariaDB password and proceed to install PHPMyAdmin" "Remove the MariaDB/MySQL server and every database" "Exit the script ")
-    bashSelect
-    case $? in
-      0 )
-        status "resetting mysql password"
-        alreadyInstalled=true;
-      ;;
-      1 )
-        status "removing MariaDB/MySQL"
-        runCommand "service mariadb stop || service mysql stop || systemctl stop mariadb; DEBIAN_FRONTEND=noninteractiv apt -y remove --purge mariadb-*"
-        runCommand "rm -r /var/lib/mysql/"
+
+    if [[ "${non_interactive}" == "false" ]]; then
+      status "It looks like mariadb is already installed\nShould it be removed or can we just reset the password?" "/"
+      export OPTIONS=("Reset MySQL/MariaDB password and proceed to install PHPMyAdmin" "Remove the MariaDB/MySQL server and every database" "Exit the script ")
+
+      bashSelect
+      case $? in
+        0 )
+          status "resetting mysql password"
+          alreadyInstalled=true;
         ;;
-      2 )
-        exit 0
-        ;;
-    esac
+        1 )
+          remove_db=true
+          ;;
+        2 )
+          exit 0
+          ;;
+      esac
+    fi
+
+    if [[ "${reset_password}" == "false" && "${remove_db}" == "false" ]]; then
+      echo -e "${red}Error:${reset} MySQL database is already installed. Use --remove_db to reinstall or --reset_password to reset the password."
+      exit 1
+    fi
+
+  fi
+
+  if [[ "${remove_db}" == "true" ]]; then
+    status "removing MariaDB/MySQL"
+    runCommand "service mariadb stop || service mysql stop || systemctl stop mariadb; DEBIAN_FRONTEND=noninteractiv apt -y remove --purge mariadb-*"
+    runCommand "rm -r /var/lib/mysql/"
   fi
 
   if [[ -d /usr/share/phpmyadmin ]]; then
-    status "It looks like the phpmyadmin directory already exists" "/"
-    export OPTIONS=("Remove the /usr/share/phpmyadmin directory" "Exit the script ")
-    bashSelect
-    case $? in
-      0 )
-        runCommand "rm -r /usr/share/phpmyadmin/" "removing /usr/share/phpmyadmin"
-        ;;
-      1 )
-        exit 0
-        ;;
-    esac
+
+    if [[ "${non_interactive}" == "false" ]]; then
+
+      status "It looks like the phpmyadmin directory already exists" "/"
+      export OPTIONS=("Remove the /usr/share/phpmyadmin directory" "Exit the script ")
+
+      bashSelect
+      case $? in
+        0 )
+          remove_pma=true
+          ;;
+        1 )
+          exit 0
+          ;;
+      esac
+
+    fi
+
+    if [[ "${remove_pma}" == "true" ]]; then
+      runCommand "rm -r /usr/share/phpmyadmin/" "removing /usr/share/phpmyadmin"
+    else
+      echo -e "${red}Error:${reset} phpmyadmin directory already exists. Use --remove_pma to remove the /usr/share/phpmyadmin directory."
+      exit 1
+    fi
+
   fi
 
 #I added this to collect some usage statistics.
