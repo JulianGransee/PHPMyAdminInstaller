@@ -538,6 +538,32 @@ while [[ "$#" -gt 0 ]]; do
   esac
 done
 
+
+if [[ "${non_interactive}" == "true" ]]; then
+  errors=()
+
+  if [[ "${rootLogin}" == "0" ]]; then
+    errors+=("${red}Error:${reset} With --non-interactive, either --security or --simple must be set.")
+  fi
+
+  if [[ "${rootLogin}" == "n" ]]; then
+    if [[ "${db_user}" == "0" ]]; then
+      errors+=("${red}Error:${reset} With --non-interactive and --security, --db_user must be set.")
+    fi
+
+    if [[ "${db_password}" == "0" ]]; then
+      errors+=("${red}Error:${reset} With --non-interactive and --security, --db_password must be set.")
+    fi
+  fi
+
+  if [[ ${#errors[@]} -gt 0 ]]; then
+    for error in "${errors[@]}"; do
+      echo -e "$error"
+    done
+    exit 1
+  fi
+fi
+
 curl --version
 if [[ $? == 127  ]]; then  apt -y install curl; fi
 
