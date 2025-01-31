@@ -522,10 +522,10 @@ while [[ "$#" -gt 0 ]]; do
       echo "  -s, --save                      Save the output to /root/.mariadbPhpma.output."
       echo "      --non-interactive           Skip all interactive prompts by providing all required inputs as options."
       echo "                                  Requires either --simple or --security to be specified."
-      echo "                                  When using --security, you must also provide --db_name and --db_password."
+      echo "                                  When using --security, you must also provide --db_user and --db_password."
       echo "      --simple                    Enable root access for phpMyAdmin (no security)."
       echo "      --security                  Disable root access for phpMyAdmin (enhanced security)."
-      echo "      --db_name <name>            Specify a database name"
+      echo "      --db_user <user>            Specify a database user."
       echo "      --db_password <password>    Set a custom password for the database."
       echo "      --generate_password         Automatically generate a secure password for the database."
       echo "      --reset_password            Reset the database password if one already exists."
@@ -552,11 +552,19 @@ while [[ "$#" -gt 0 ]]; do
       shift
       ;;
     --db_user)
+      if [[ -z "$2" ]]; then
+        echo "Error: --db_user requires an argument."
+        exit 1
+      fi
       db_user="$2"
       dynuser="${db_user}"
       shift 2
       ;;
     --db_password)
+      if [[ -z "$2" ]]; then
+        echo "Error: --db_password requires an argument."
+        exit 1
+      fi
       db_password="$2"
       generatePassword="false"
       dynamicUserPassword="${db_password}"
@@ -595,11 +603,11 @@ if [[ "${non_interactive}" == "true" ]]; then
 
   if [[ "${rootLogin}" == "n" ]]; then
     if [[ "${db_user}" == "0" ]]; then
-      errors+=("${red}Error:${reset} With --non-interactive and --security, --db_user must be set.")
+      errors+=("${red}Error:${reset} With --non-interactive and --security, --db_user <user> must be set.")
     fi
 
     if [[ "${db_password}" == "0" ]]; then
-      errors+=("${red}Error:${reset} With --non-interactive and --security, --db_password must be set.")
+      errors+=("${red}Error:${reset} With --non-interactive and --security, --db_password <password> must be set.")
     fi
   fi
 
