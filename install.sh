@@ -19,6 +19,14 @@ red='\033[0;31m'
 white='\033[0;37m'
 reset='\033[0;0m'
 
+non_interactive=false
+db_user=0
+db_password=0
+rootLogin=0
+reset_password=false
+remove_db=false
+remove_pma=false
+
 status(){
   clear
   if [[ "$2" == "/" ]]; then
@@ -48,53 +56,64 @@ function input() {
 
   clear
 
-  status "Create a special account for PHPMyAdmin access (this is going to disable the PHPMyAdmin access with root)?" "/"
+  if [[ "${non_interactive}" == "false" ]]; then
 
-  export OPTIONS=("No, keep it simple" "Yes, I want security")
-    bashSelect
-    case $? in
-      0 )
-        status "okay"
-        rootLogin="y"
-      ;;
-      1 )
-        rootLogin="n";
+    status "Create a special account for PHPMyAdmin access (this is going to disable the PHPMyAdmin access with root)?" "/"
 
-        #readUname
-        while [ -z $dynuser ]; do
-           dynuser=$( echo $dynuser | sed 's/ //g' | sed 's/[^a-z]//g' )
-           read -ep $'\e[37mPlease enter a name for the MySQL user you want to use later to log in to PHPMyAdmin:\e[0m ' dynuser;
-           if [[ "${dynuser,,%%*( )}" == "root" ]]; then
-             unset dynuser
-           fi
+    export OPTIONS=("No, keep it simple" "Yes, I want security")
+      bashSelect
+      case $? in
+        0 )
+          status "okay"
+          rootLogin="y"
+        ;;
+        1 )
+          rootLogin="n";
+        ;;
+      esac
+  fi
 
-        done
-
-         status "Set a password" "/"
-         export OPTIONS=("Let the script generate a secure passwort" "No, I will do it myself")
-         bashSelect
-           case $? in
-             0 )
-               generatePassword="true";
-             ;;
-             1 )
-               while [ -z $dynamicUserPassword ]; do
-                 read -ep $'\e[37mPassword for \e[0m\e[36m'$dynuser$'\e[0m\e[37m:\e[0m ' dynamicUserPassword;
-               done
-               generatePassword="false";
-               dynamicUserPassword=`echo $dynamicUserPassword | sed 's/ *$//g'`
-                if [[ "${dynamicUserPassword,,%%*( )}" == "auto" ]]; then
-
-                  generatePassword="true";
-
-                fi
-
-             ;;
-             esac
+  if [[ "${rootLogin}" == "y" ]]; then
+    return 0
+  fi
 
 
-      ;;
-    esac
+  if [[ "${db_user}" == "0" ]]; then
+
+    #readUname
+    while [ -z $dynuser ]; do
+      dynuser=$( echo $dynuser | sed 's/ //g' | sed 's/[^a-z]//g' )
+      read -ep $'\e[37mPlease enter a name for the MySQL user you want to use later to log in to PHPMyAdmin:\e[0m ' dynuser;
+      if [[ "${dynuser,,%%*( )}" == "root" ]]; then
+        unset dynuser
+      fi
+    done
+  fi
+  
+
+
+  if [[ "${db_password}" == "0" ]]; then
+
+    status "Set a password" "/"
+          
+      export OPTIONS=("Let the script generate a secure passwort" "No, I will do it myself")
+      bashSelect
+      case $? in
+        0 )
+          generatePassword="true";
+        ;;
+        1 )
+          while [ -z $dynamicUserPassword ]; do
+            read -ep $'\e[37mPassword for \e[0m\e[36m'$dynuser$'\e[0m\e[37m:\e[0m ' dynamicUserPassword;
+          done
+          generatePassword="false";
+          dynamicUserPassword=`echo $dynamicUserPassword | sed 's/ *$//g'`
+          if [[ "${dynamicUserPassword,,%%*( )}" == "auto" ]]; then
+            generatePassword="true";
+          fi
+        ;;
+      esac
+  fi
 
 }
 
@@ -102,37 +121,65 @@ function serverCheck() {
   status "running some checks"
   mariadb --version
   if [[ $? != 127 ]]; then
-    status "It looks like mariadb is already installed\nShould it be removed or can we just reset the password?" "/"
-    export OPTIONS=("Reset MySQL/MariaDB password and proceed to install PHPMyAdmin" "Remove the MariaDB/MySQL server and every database" "Exit the script ")
-    bashSelect
-    case $? in
-      0 )
-        status "resetting mysql password"
-        alreadyInstalled=true;
-      ;;
-      1 )
-        status "removing MariaDB/MySQL"
-        runCommand "service mariadb stop || service mysql stop || systemctl stop mariadb; DEBIAN_FRONTEND=noninteractiv apt -y remove --purge mariadb-*"
-        runCommand "rm -r /var/lib/mysql/"
+
+    if [[ "${non_interactive}" == "false" ]]; then
+      status "It looks like mariadb is already installed\nShould it be removed or can we just reset the password?" "/"
+      export OPTIONS=("Reset MySQL/MariaDB password and proceed to install PHPMyAdmin" "Remove the MariaDB/MySQL server and every database" "Exit the script ")
+
+      bashSelect
+      case $? in
+        0 )
+          status "resetting mysql password"
+          alreadyInstalled=true;
         ;;
-      2 )
-        exit 0
-        ;;
-    esac
+        1 )
+          remove_db=true
+          ;;
+        2 )
+          exit 0
+          ;;
+      esac
+    fi
+
+    if [[ "${reset_password}" == "false" && "${remove_db}" == "false" ]]; then
+      echo -e "${red}Error:${reset} MySQL database is already installed. Use --remove_db to reinstall or --reset_password to reset the password."
+      exit 1
+    fi
+
+  fi
+
+  if [[ "${remove_db}" == "true" ]]; then
+    status "removing MariaDB/MySQL"
+    runCommand "service mariadb stop || service mysql stop || systemctl stop mariadb; DEBIAN_FRONTEND=noninteractiv apt -y remove --purge mariadb-*"
+    runCommand "rm -r /var/lib/mysql/"
   fi
 
   if [[ -d /usr/share/phpmyadmin ]]; then
-    status "It looks like the phpmyadmin directory already exists" "/"
-    export OPTIONS=("Remove the /usr/share/phpmyadmin directory" "Exit the script ")
-    bashSelect
-    case $? in
-      0 )
-        runCommand "rm -r /usr/share/phpmyadmin/" "removing /usr/share/phpmyadmin"
-        ;;
-      1 )
-        exit 0
-        ;;
-    esac
+
+    if [[ "${non_interactive}" == "false" ]]; then
+
+      status "It looks like the phpmyadmin directory already exists" "/"
+      export OPTIONS=("Remove the /usr/share/phpmyadmin directory" "Exit the script ")
+
+      bashSelect
+      case $? in
+        0 )
+          remove_pma=true
+          ;;
+        1 )
+          exit 0
+          ;;
+      esac
+
+    fi
+
+    if [[ "${remove_pma}" == "true" ]]; then
+      runCommand "rm -r /usr/share/phpmyadmin/" "removing /usr/share/phpmyadmin"
+    else
+      echo -e "${red}Error:${reset} phpmyadmin directory already exists. Use --remove_pma to remove the /usr/share/phpmyadmin directory."
+      exit 1
+    fi
+
   fi
 
 #I added this to collect some usage statistics.
@@ -463,28 +510,117 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-while getopts ":sh" option; do
-  case $option in
-    h )
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+    -h|--help)
       echo "This is just a simple script to install PHPMyAdmin, Apache2 and MariaDB on Debian based systems."
       echo
-      echo "Syntax: bash <(curl -s https://raw.githubusercontent.com/JulianGransee/PHPMyAdminInstaller/main/install.sh) [-h|-s]"
+      echo "Syntax: bash <(curl -s https://raw.githubusercontent.com/JulianGransee/PHPMyAdminInstaller/main/install.sh) [options]"
       echo
-      echo "options:"
-      echo "h  -  Print this help menu"
-      echo "s  -  save the output in /root/.mariadbPhpma.output"
-      echo ""
+      echo "Options:"
+      echo "  -h, --help                      Display this help message."
+      echo "  -s, --save                      Save the output to /root/.mariadbPhpma.output."
+      echo "      --non-interactive           Skip all interactive prompts by providing all required inputs as options."
+      echo "                                  Requires either --simple or --security to be specified."
+      echo "                                  When using --security, you must also provide --db_user and --db_password."
+      echo "      --simple                    Enable root access for phpMyAdmin (no security)."
+      echo "      --security                  Disable root access for phpMyAdmin (enhanced security)."
+      echo "      --db_user <user>            Specify a database user."
+      echo "      --db_password <password>    Set a custom password for the database."
+      echo "      --generate_password         Automatically generate a secure password for the database."
+      echo "      --reset_password            Reset the database password if one already exists."
+      echo "      --remove_db                 Remove MySQL/MariaDB and reinstall it."
+      echo "      --remove_pma                Remove phpMyAdmin and reinstall it if it already exists."
+      shift
       exit
       ;;
-    s )
+    -s|--save)
       status "The output is written to a file"
       saveOutput=true
+      shift
+      ;;
+    --non-interactive)
+      non_interactive=true
+      shift
+      ;;
+    --security)
+      rootLogin="n"
+      shift
+      ;;
+    --simple)
+      rootLogin="y"
+      shift
+      ;;
+    --db_user)
+      if [[ -z "$2" ]]; then
+        echo "Error: --db_user requires an argument."
+        exit 1
+      fi
+      db_user="$2"
+      dynuser="${db_user}"
+      shift 2
+      ;;
+    --db_password)
+      if [[ -z "$2" ]]; then
+        echo "Error: --db_password requires an argument."
+        exit 1
+      fi
+      db_password="$2"
+      generatePassword="false"
+      dynamicUserPassword="${db_password}"
+      shift 2
+      ;;
+    --generate_password)
+      generatePassword="true"
+      shift
+      ;;
+    --reset_password)
+      reset_password="true"
+      shift
+      ;;
+    --remove_db)
+      remove_db="true"
+      shift
+      ;;
+    --remove_pma)
+      remove_pma="true"
+      shift
+      ;;
+    *)
+      echo "Unknown option: $1"
+      exit 1
       ;;
   esac
 done
 
+
+if [[ "${non_interactive}" == "true" ]]; then
+  errors=()
+
+  if [[ "${rootLogin}" == "0" ]]; then
+    errors+=("${red}Error:${reset} With --non-interactive, either --security or --simple must be set.")
+  fi
+
+  if [[ "${rootLogin}" == "n" ]]; then
+    if [[ "${db_user}" == "0" ]]; then
+      errors+=("${red}Error:${reset} With --non-interactive and --security, --db_user <user> must be set.")
+    fi
+
+    if [[ "${db_password}" == "0" ]]; then
+      errors+=("${red}Error:${reset} With --non-interactive and --security, --db_password <password> must be set.")
+    fi
+  fi
+
+  if [[ ${#errors[@]} -gt 0 ]]; then
+    for error in "${errors[@]}"; do
+      echo -e "$error"
+    done
+    exit 1
+  fi
+fi
+
 curl --version
-if [[ $? == 127  ]]; then  apt -y install curl; fi
+if [[ $? == 127  ]]; then  apt update -y && apt -y install curl; fi
 
 source <(curl -s https://raw.githubusercontent.com/JulianGransee/BashSelect.sh/main/BashSelect.sh)
 
