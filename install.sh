@@ -78,41 +78,43 @@ function input() {
   fi
 
 
-  if [[ "${db_user}" == "0" ]]; then
+  if [[ "${non_interactive}" == "false" ]]; then
+    if [[ "${db_user}" == "0" ]]; then
 
-    #readUname
-    while [ -z $dynuser ]; do
-      dynuser=$( echo $dynuser | sed 's/ //g' | sed 's/[^a-z]//g' )
-      read -ep $'\e[37mPlease enter a name for the MySQL user you want to use later to log in to PHPMyAdmin:\e[0m ' dynuser;
-      if [[ "${dynuser,,%%*( )}" == "root" ]]; then
-        unset dynuser
-      fi
-    done
-  fi
-  
+      #readUname
+      while [ -z $dynuser ]; do
+        dynuser=$( echo $dynuser | sed 's/ //g' | sed 's/[^a-z]//g' )
+        read -ep $'\e[37mPlease enter a name for the MySQL user you want to use later to log in to PHPMyAdmin:\e[0m ' dynuser;
+        if [[ "${dynuser,,%%*( )}" == "root" ]]; then
+          unset dynuser
+        fi
+      done
+    fi
+    
 
 
-  if [[ "${db_password}" == "0" ]]; then
+    if [[ "${db_password}" == "0" ]]; then
 
-    status "Set a password" "/"
-          
-      export OPTIONS=("Let the script generate a secure passwort" "No, I will do it myself")
-      bashSelect
-      case $? in
-        0 )
-          generatePassword="true";
-        ;;
-        1 )
-          while [ -z $dynamicUserPassword ]; do
-            read -ep $'\e[37mPassword for \e[0m\e[36m'$dynuser$'\e[0m\e[37m:\e[0m ' dynamicUserPassword;
-          done
-          generatePassword="false";
-          dynamicUserPassword=`echo $dynamicUserPassword | sed 's/ *$//g'`
-          if [[ "${dynamicUserPassword,,%%*( )}" == "auto" ]]; then
+      status "Set a password" "/"
+            
+        export OPTIONS=("Let the script generate a secure passwort" "No, I will do it myself")
+        bashSelect
+        case $? in
+          0 )
             generatePassword="true";
-          fi
-        ;;
-      esac
+          ;;
+          1 )
+            while [ -z $dynamicUserPassword ]; do
+              read -ep $'\e[37mPassword for \e[0m\e[36m'$dynuser$'\e[0m\e[37m:\e[0m ' dynamicUserPassword;
+            done
+            generatePassword="false";
+            dynamicUserPassword=`echo $dynamicUserPassword | sed 's/ *$//g'`
+            if [[ "${dynamicUserPassword,,%%*( )}" == "auto" ]]; then
+              generatePassword="true";
+            fi
+          ;;
+        esac
+    fi
   fi
 
 }
@@ -606,8 +608,8 @@ if [[ "${non_interactive}" == "true" ]]; then
       errors+=("${red}Error:${reset} With --non-interactive and --security, --db_user <user> must be set.")
     fi
 
-    if [[ "${db_password}" == "0" ]]; then
-      errors+=("${red}Error:${reset} With --non-interactive and --security, --db_password <password> must be set.")
+    if [[ "${db_password}" == "0" && "${generatePassword}" != "true" ]]; then
+      errors+=("${red}Error:${reset} With --non-interactive and --security, either --db_password <password> or --generate_password must be set.")
     fi
   fi
 
