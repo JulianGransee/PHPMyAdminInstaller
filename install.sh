@@ -141,9 +141,7 @@ function serverCheck() {
           exit 0
           ;;
       esac
-    fi
-
-    if [[ "${reset_password}" == "false" && "${remove_db}" == "false" ]]; then
+    elif [[ "${reset_password}" == "false" && "${remove_db}" == "false" ]]; then
       echo -e "${red}Error:${reset} MySQL database is already installed. Use --remove_db to reinstall or --reset_password to reset the password."
       exit 1
     fi
