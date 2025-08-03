@@ -273,7 +273,7 @@ function phpinstall() {
 
     runCommand "apt -y update"
 
-    runCommand "apt -y install php8.3 php8.3-{cli,fpm,common,mysql,zip,gd,mbstring,curl,xml,bcmath}  libapache2-mod-php8.3" "installing php8"
+    runCommand "apt -y install php8.4 php8.4-{cli,fpm,common,mysql,zip,gd,mbstring,curl,xml,bcmath}  libapache2-mod-php8.3" "installing php8"
 
   else
 
